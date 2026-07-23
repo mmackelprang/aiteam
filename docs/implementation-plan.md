@@ -9,6 +9,17 @@
 
 Three machines, three jobs: the **dev computer** is for anything interactive (Obsidian, human review passes, first test runs), the **NAS** is storage and the vault's git remote (no app compute), and the **appserver** is everything unattended and always-on (nightly sync, Paperclip, the agent team, escalation crons).
 
+### 1.0 Ground truth from `mmackelprang/homelab` (read 2026-07-23)
+
+The homelab repo pins down what this plan previously assumed — placement below follows its conventions:
+
+- **Dev computer** (your note, 2026-07-23): 32 GB RAM / 32 cores / 4 TB disk / 8 GB GPU — comfortably runs several concurrent Claude sessions. It stays the *interactive* tier: bootstrap and review passes, first sync test runs, and the **manual-drive host** (pause a project's appserver agents, then drive the project here — the pause-first rule's workflow). It is deliberately **not** the agents' steady-state home: it's regularly off (as now), and the always-on appserver is where the team lives. The 8 GB GPU constrains nothing in this plan — agents are Anthropic-API-backed, and any local-model experiments would use the appserver's existing Ollama anyway.
+- **Appserver** is an Ubuntu 24.04 Docker host (`mmack@appserver`, docker without sudo). Stack convention: `/srv/<stack>/` with an off-repo `.env` (mode 600), stateful data on the second disk under `/data/<stack>/` (the storage-symlink pattern). Host Caddy owns `:80`/`:443`; only explicitly published sites go public. **aiteam deploys as the `/srv/aiteam/` stack, stateful data under `/data/aiteam/`, and the Paperclip dashboard (`:3100`) stays LAN/tailnet-only — no Caddy site block.**
+- **Deploys ride self-hosted GitHub Actions runners** (`/srv/gha-runners/compose.runner.yml`, one repo-scoped runner per repo, shared `FW_RUNNER_PAT`, with a commented template block for adding one). **Stage 4 adds an `appserver-aiteam` runner + a `deploy-aiteam.yml` workflow** patterned on FamilyWorkspace's `deploy-fw` (sync `/srv/aiteam/repo`, restart the sync timer / harness services). Homelab CI policy is advisory — consistent with this repo.
+- **NAS** is TrueNAS SCALE (`truenas-scale`, LAN `192.168.86.47`), pool `datapool` at `/mnt/datapool` (~13 T free). The vault + `vault.git` bare remote live on a `datapool` dataset; **the appserver reaches the bare repo over the existing `ssh nas` alias, so git-as-transport needs no new NFS/SMB export** (strengthens D3). Paperclip `pg_dump`s and the cost-event archive land here too.
+- **A Tailscale tailnet exists** (`taila02f52.ts.net`; the NAS is node `truenas-scale`, appserver SSH is LAN/tailnet). The off-LAN answer path for review items (F12) is the Paperclip dashboard over the tailnet. D7 is thereby answered: remote admin is possible in principle, but your access path runs through the dev computer — currently off — so Stage 0's SSH prep waits until you're home; repo/doc-side work proceeds meanwhile.
+- **Homelab documentation conventions apply to every new service**: `appserver/services/<name>.md` from the template, every web UI in `DASHBOARDS.md` + the Homepage pane on the NAS, every secret a `SECRETS.md` pointer with a `SECRETS.template.md` regeneration entry, `capture.sh` re-run after changes. Stages 4–6 include these registration steps so homelab stays the disaster-recovery source of truth.
+
 ```mermaid
 flowchart LR
     subgraph DEV["Dev computer — interactive"]
@@ -49,14 +60,16 @@ flowchart LR
 |---|---|---|---|---|
 | Obsidian + plugins (Obsidian Git, Local REST API, Dataview, Templater; Bases core) | Dev computer | obsidian.md installer + in-app plugin browser | Stage 1 | Requires being at the machine. Enable **Obsidian Git first** (hard rule). |
 | Vault (canonical files) | NAS | your existing share/sync; dev machine keeps its synced working copy | Stage 1 | Exactly one canonical copy — see F1/F2. |
-| `vault.git` bare remote | NAS | `git init --bare` over SSH | Stage 1 | Backup + multi-writer transport (F2). Doable remotely if NAS is SSH-reachable. |
+| `vault.git` bare remote | NAS (`datapool` dataset) | `git init --bare` over `ssh nas` | Stage 1 | Backup + multi-writer transport (F2); appserver pulls/pushes over the existing `ssh nas` alias (§1.0). |
 | Claude Code CLI + MCP connectors (github, obsidian) | Dev computer | `claude mcp add …` (`portfolio/vault-config/README.md` §3) | Stage 1 | Obsidian MCP only works while the app is open — interactive use only. |
 | Python 3.10+ / Node 18+ / uv | Dev computer **and** appserver | package manager | Stage 0–1 | Appserver half is remote-doable now (D7). |
 | `portfolio/bootstrap/*` (P-Tasks 1–3) | Dev computer only | this repo | Stages 1–2 | Interactive by design — human confirms pilot set and reviews drafts. |
 | `portfolio/sync/*` (P-Tasks 6, 8) | Dev computer first (test runs), then appserver (container + systemd timer, nightly) | Docker + systemd/cron | Stage 3 → 4 | Appserver writes the vault via git/filesystem, **not** the Local REST API (F1). |
 | `portfolio_updater/update.py` (P-Task 7) | Dev computer (Phase 0); appserver beside the agents (Phase 1+) | repo checkout | Stage 3 | The only agent write-path into notes. |
-| Paperclip + embedded Postgres | Appserver | `npx paperclipai onboard` — **pin the version** (F11) | Stage 5 | Dashboard on :3100, LAN/VPN only. |
-| Claude Code CLI for agents (`claude_local` adapters) | Appserver | installer + per-agent auth | Stage 5 | Worktrees of the pilot repo for code-touching roles. |
+| Paperclip + embedded Postgres | Appserver — `/srv/aiteam/`, data on `/data/aiteam/` | `npx paperclipai onboard` — **pin the version** (F11) | Stage 5 | Dashboard `:3100`, LAN/tailnet only — no Caddy site block (§1.0). |
+| `appserver-aiteam` GHA runner + `deploy-aiteam.yml` | Appserver (`/srv/gha-runners/`) | copy the runner template block (4 fields) | Stage 4 | The deploy mechanism for the `/srv/aiteam` stack, per homelab CI/CD conventions (§1.0). |
+| Homelab registration (service doc, `DASHBOARDS.md`, Homepage, `SECRETS.md` pointers) | homelab repo + NAS Homepage | edit + `capture.sh` | Stages 4–6 | Keeps the DR docs truthful (§1.0). |
+| Claude Code CLI for agents (`claude_local` adapters) | Appserver (steady-state); dev computer as optional burst/manual-drive host | installer + per-agent auth | Stage 5 | Worktrees of the pilot repo for code-touching roles. |
 | `harness/tools/*` (H-Tasks 3, 4, 6, 7) | Appserver | repo checkout | Stage 6 | notify.py needs outbound HTTPS only (one-way Phase 0/1). |
 | SLA escalation + daily digest (H-Task 5) | Appserver | systemd timer/cron | Stage 6 | Must live on an always-on box, not the dev machine. |
 | Cost-event log (JSONL, OTel GenAI-shaped tags) | Appserver, archived to NAS | written by agent wrapper/hooks | Stage 5–6 | Tagged project/role/task from the first event (hard rule). |
@@ -125,6 +138,18 @@ Both documents already went through an adversarial review round and carry non-ne
 
 **Recommendation:** tier 1 lands in Stage 6 alongside Slack (per-agent named webhooks make Chat a real channel immediately); tier 2 becomes the defined Phase 2 once two-way matters; tier 3(a) only on demonstrated need. → D6 reframed accordingly.
 
+**Placement — no separate repo or folder at any tier.** Tier 1 is pure configuration inside `harness/` (routing YAML + env vars — no new code surface). The tier-2 two-way app is a small always-on service that consumes the same `review_item` schema and renderers, so it belongs beside them: **`harness/chat_app/`**, deployed as one more container in the `/srv/aiteam` appserver stack. Only Google-side *configuration* (one GCP project, Chat API config, Pub/Sub topic + subscription) lives outside the repo, documented in `harness/docs/` when Phase 2 starts. If the subtrees ever split into two repos, `chat_app/` travels with the harness.
+
+### F15 — Adding a project/PM must be configuration, not development
+
+**Requirement (2026-07-23):** onboarding `new-project` should be one registration that (a) registers it with the portfolio, (b) stands up its harness team, and (c) enables comms with that project's manager/PM. The one-file-per-project convention both systems already use (vault note; `notification_routing/<project>.yaml`; `trust_tiers/<project>--<role>.yaml`; Paperclip team instantiated from the template) is exactly what makes this scriptable. Build a root-level **`bin/new-project <name> [--repo owner/name]`** wrapper that invokes each subtree's own CLI in order — subprocess calls, never imports, so the subtrees stay separable (sanctioned root-level glue; if the repos ever split, it decomposes into two commands). Runs from the dev computer or the appserver — it needs a repo checkout and the Paperclip API. What it does:
+
+1. **Portfolio** — create the draft note (single-repo bootstrap path when a repo exists; roadmap-idea shape when pre-repo). Judgment fields stay yours: the command points you at the note to set `status` / `priority` / `target_quarter` / `summary` — deliberately manual, per hard rule.
+2. **Harness** — instantiate the team from `templates/default-team.json` under Paperclip (budgets + heartbeats from the template), and write `trust_tiers/<name>--<role>.yaml` at tier 0 for every role.
+3. **Comms** — write `notification_routing/<name>.yaml` with per-role env-var names pre-filled (`GOOGLE_CHAT_WEBHOOK_URL__<NAME>__PROJECT_LEAD`, …), then print the one manual step: create the named webhook(s) in the project's Chat space ("PM · <name>" — name and avatar are set at webhook creation), paste the URL(s) into `/srv/aiteam`'s env file, add the `SECRETS.md` pointer. (Webhook creation has no API — it's a ~2-minute UI step. Under Phase 2's tier-2 app this becomes "add the Chat app to the space," with no per-project Google work at all.)
+
+Idempotent, `--dry-run`, and everything it can't do itself it prints as a short checklist. Net: a new project = **one command + judgment fields in Obsidian + one webhook paste.** → Built in Stage 6, proven in Stage 7 by onboarding a second project this way.
+
 ---
 
 ## 4. Staged plan
@@ -134,7 +159,8 @@ Stages are ordered so portfolio Phase 0 completes before the harness installs (i
 ### Stage 0 — now, from anywhere ✅ *(mostly done this session)*
 - ✅ Repo scaffolded (Task 0 of both handoffs), this plan written.
 - ☐ You: review this plan, answer the decision list (§5).
-- ☐ Remote-doable prep, if the appserver/NAS are SSH-reachable from where you are (D7): install Docker + Node 18+ + Python 3.10+ + uv on the appserver; `git init --bare` the vault remote on the NAS; create the appserver's NAS mount point.
+- ✅ Homelab repo read; topology grounded in its conventions (§1.0).
+- ☐ SSH prep — **deferred** (D7 answered: your access path is the dev computer, currently off). First-evening-home items: Node 18+ / Python 3.10+ / uv on the appserver (Docker's already there); `git init --bare` the vault remote on a NAS `datapool` dataset. No NFS/SMB mount needed — git rides `ssh nas` (§1.0).
 - ☐ Browser-doable prep: create the GitHub PAT (read scope on org + personal repos); create the Slack app and grab `SLACK_BOT_TOKEN` (`chat:write`, `channels:read`, `im:write`) — defer Events API (D6).
 - ☐ Drop the missing `agentic-team-framework-proposal.md` into `harness/docs/proposal.md` when you have it.
 
@@ -156,12 +182,12 @@ Stages are ordered so portfolio Phase 0 completes before the harness installs (i
 11. **P-Task 9 / portfolio acceptance** (`portfolio/HANDOFF.md` §6, plus F6's stronger diff criterion). **Gate:** pilot behaves end-to-end before any rollout or harness work.
 
 ### Stage 4 — appserver: graduate the sync *(portfolio Phase 1)*
-12. Containerize `sync/`; nightly systemd timer; secrets per §1.2.
-13. Vault write path per D3 (recommended: clone from NAS `vault.git`, commit + push each run — F1/F2).
-14. Watch one week of nightly commits for cleanliness (F7's guard proves itself here).
+12. Stand up the `/srv/aiteam` stack per homelab conventions (repo checkout, `.env.appserver` mode 600, stateful data under `/data/aiteam/`, `SECRETS.md` pointers + template entries). Containerize `sync/`; nightly systemd timer; secrets per §1.2.
+13. Vault write path per D3: clone from the NAS `vault.git` over `ssh nas`; each run commits `sync: computed fields <date>` and pushes (F1/F2).
+14. Add the `appserver-aiteam` GHA runner (template block in `/srv/gha-runners/compose.runner.yml`, four fields swapped) and a `deploy-aiteam.yml` workflow patterned on `deploy-fw`; register everything in homelab (`appserver/services/aiteam.md`, `DASHBOARDS.md`, Homepage, re-run `capture.sh`). Then watch a week of nightly commits for cleanliness (F7's guard proves itself here).
 
 ### Stage 5 — appserver: Paperclip + the pilot team *(harness Phase 0 begins)*
-15. **H-Task 1**: install Paperclip (pin version), confirm :3100, stand up the nightly `pg_dump` → NAS (F11).
+15. **H-Task 1**: install Paperclip into the `/srv/aiteam` stack (pin the version; Postgres data under `/data/aiteam/`), confirm `:3100` (LAN/tailnet only), stand up the nightly `pg_dump` → NAS over `ssh nas` (F11); add the dashboard to homelab `DASHBOARDS.md` + Homepage.
 16. Claude Code CLI + per-agent auth (D5); worktrees of the pilot repo for code-touching roles.
 17. **H-Task 2**: instantiate the six-role team from `harness/templates/default-team.json` (reconcile the draft with Paperclip's real export format, budgets set, heartbeats per role) — pilot project per D2.
 18. **H-Task 8** early, per F10: Tier-0 allowlists per role in each worktree; everything outside them routes to review (D4). Trust-tier files at 0 in `config/trust_tiers/`.
@@ -171,12 +197,14 @@ Stages are ordered so portfolio Phase 0 completes before the harness installs (i
 20. **H-Task 3** (`raise_for_review.py`) and **H-Task 4** (`notify.py` — Slack Block Kit and Google Chat Cards v2 renderers; per-agent named webhooks per F14 tier 1; Paperclip link as primary CTA per F12).
 21. **H-Task 5**: SLA escalation + daily digest on a systemd timer.
 22. **H-Tasks 6–7**: `cost_summary.py` + `team_status.py` read-interfaces, and the one-command pause.
+23. **F15**: build `bin/new-project` — one command registering a project with the portfolio, instantiating its harness team, and writing its comms config (idempotent, `--dry-run`, prints the webhook paste-step).
 
 ### Stage 7 — integration + full acceptance
-23. Extend `portfolio/sync/sync_computed_fields.py` with Paperclip as a second source (`computed.cost_by_stage`, `cost_total_mtd`, `team_status`) — the write stays in the portfolio subtree, per the single-writer rule.
-24. **H-Task 9 / harness acceptance** (`harness/HANDOFF-agentic-harness.md` §8): real review item → rendered alerts with working links; SLA escalation fires on an intentionally-ignored low item; sane per-role costs; one-step pause visible to the next sync; no agent with `dangerouslySkipPermissions`.
-25. **Gate:** both acceptance checklists green → discuss rolling the portfolio out to the remaining ~15 repos and (separately, later) a second harness team.
-26. *(Phase 2, on your explicit go — hard rule #5:)* the two-way Google Chat app via Pub/Sub (F14 tier 2), moving answers from the Paperclip dashboard into the Chat thread itself.
+24. Extend `portfolio/sync/sync_computed_fields.py` with Paperclip as a second source (`computed.cost_by_stage`, `cost_total_mtd`, `team_status`) — the write stays in the portfolio subtree, per the single-writer rule.
+25. **H-Task 9 / harness acceptance** (`harness/HANDOFF-agentic-harness.md` §8): real review item → rendered alerts with working links; SLA escalation fires on an intentionally-ignored low item; sane per-role costs; one-step pause visible to the next sync; no agent with `dangerouslySkipPermissions`.
+26. **F15 proof:** onboard a second project purely by configuration — one `bin/new-project` run, judgment fields in Obsidian, one webhook paste. Anything that required editing code is a bug in the onboarding flow.
+27. **Gate:** both acceptance checklists green → discuss rolling the portfolio out to the remaining ~15 repos and (separately, later) a second harness team.
+28. *(Phase 2, on your explicit go — hard rule #5:)* the two-way Google Chat app via Pub/Sub (F14 tier 2), moving answers from the Paperclip dashboard into the Chat thread itself.
 
 ---
 
@@ -186,11 +214,11 @@ Stages are ordered so portfolio Phase 0 completes before the harness installs (i
 |---|---|---|---|
 | D1 | Pilot set of 3–5 repos | end of Stage 1 | Mostly well-documented active repos, plus **one** poorly-documented one to exercise the low-confidence path. |
 | D2 | Harness pilot project | before Stage 5 | One of the D1 repos with real current activity, so the team has actual work. |
-| D3 | Appserver→vault write transport | Stage 4 | **Git-as-transport** (clone/commit/push against NAS `vault.git`) over direct NFS writes — conflicts become visible merges, and it doubles as backup. |
+| D3 | Appserver→vault write transport | Stage 4 | **Git-as-transport** (clone/commit/push against NAS `vault.git`) over direct NFS writes — conflicts become visible merges, it doubles as backup, and it rides the existing `ssh nas` alias with no new NFS/SMB export (§1.0). |
 | D4 | Tier 0 = curated per-role allowlist, overflow → `raise_for_review` (F10) | before Stage 5 | Sign off on this interpretation — it touches the trust rules, so it's explicitly yours. |
 | D5 | Anthropic auth: single key + tags vs. per-role keys | Stage 5 | Single key + tagging is simpler; per-role keys add a free per-role cross-check in the Anthropic Console. Either satisfies the tagging rule. |
 | D6 | Google Chat identity model (F14): per-agent named webhooks ship in Stage 6; approve the two-way app (tier 2, Pub/Sub) as Phase 2; any need for fully separate app identities (tier 3)? | Stage 6 / Phase 2 | Tier 1 now — Slack and Chat both ship in Stage 6; tier 2 next; tier 3 only on demonstrated need. |
-| D7 | Are the appserver/NAS SSH-reachable while you're away (VPN/tailnet)? | now | Determines how much of Stage 0's prep can happen before you're home. |
+| D7 | Remote reachability while away | **answered** | Tailnet exists (§1.0), but your access path is the dev computer — currently off. Stage 0's SSH prep waits until you're home; repo/plan/browser work proceeds now. |
 | D8 | Changelog 140-char cap + extra confidence signals | revisit at Stage 3 | Keep both as spec'd; adjust only on evidence from the pilot (the handoffs' own open questions). |
 
 ---

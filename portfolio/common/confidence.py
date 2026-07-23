@@ -41,6 +41,7 @@ class RepoFacts:
     visibility: str = "private"
     archived: bool = False
     fork: bool = False
+    pushed_at: dt.date | None = None
     last_commit: dt.date | None = None
     open_issues: int = 0
     latest_release: str | None = None

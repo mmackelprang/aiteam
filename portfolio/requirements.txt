@@ -1,0 +1,5 @@
+# Runtime
+PyYAML>=6.0
+
+# Dev/test (not needed on the appserver container)
+pytest>=8

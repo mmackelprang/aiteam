@@ -60,12 +60,23 @@ views:
       - computed.summary_confidence
 ```
 
+## Sync status
+
+The sync job owns only what sits between the HTML markers below (and the
+Unclaimed block) — everything else on this note is human territory.
+
+<!-- sync:last-run -->
+_No sync has run yet._
+<!-- /sync:last-run -->
+
 ## Unclaimed repos
 
 Written nightly by `sync/unclaimed_repos.py` (Task 8) — repos found on the
 GitHub account but not yet tracked in the vault.
 
-_Nothing yet — sync job not built._
+<!-- sync:unclaimed -->
+_Nothing yet — sync job has not run._
+<!-- /sync:unclaimed -->
 
 ## Add a new project
 

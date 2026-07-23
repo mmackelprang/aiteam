@@ -160,6 +160,8 @@ The full harness proposal (received 2026-07-23) says the review queue is "pushed
 
 Stages are ordered so portfolio Phase 0 completes before the harness installs (its cost/status reporting has nothing to write into otherwise). **Stage 0 is fully doable while you're away from home.**
 
+> **Off-site build status (2026-07-23, cloud session):** the environment-independent core is implemented and fixture-tested — portfolio: the F6 splice engine (byte-identity outside the owned span) + F7 no-op guard, portfolio-updater, sync + unclaimed-repos, bootstrap trio behind the GitHub-source seam (`--source fixture:PATH` runs everything offline); harness: `review_item` schema (+ `raised_by` per F14), raise-for-review with an honest Paperclip stub, Slack Block Kit + Google Chat Cards v2 renderers with per-role webhook selection, the OTel-tagged cost log + rollup (heartbeat overhead per F13 measurable from day one), and the seven Tier-0 allowlist presets (`harness/config/allowlists/`). **78 tests green.** Still pending on-site: live GitHub client verification (Stage 3), Paperclip client reconciliation + `team_status.py` (Stage 5), real Slack/Chat sends + allowlist syntax validation (Stages 5–6). Net effect: Stages 1–3 at home shrink from "build" to install + connect + verify-live.
+
 ### Stage 0 — now, from anywhere ✅ *(mostly done this session)*
 - ✅ Repo scaffolded (Task 0 of both handoffs), this plan written.
 - ✅ Decision list answered — all nine resolved (§5, 2026-07-23).

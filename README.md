@@ -16,8 +16,9 @@ Harness agents report **cost** and **team status** up into the portfolio's Obsid
 ## Where things stand
 
 - ✅ **Task 0 (scaffold) done for both systems** — structure, docs, templates, stub modules, and project memory (`CLAUDE.md`) are in place. All `.py` files are stubs carrying their contract in the docstring; implementation follows each handoff's task order.
+- 📋 **[`docs/implementation-plan.md`](docs/implementation-plan.md)** — the working plan: component placement across dev computer / NAS / appserver, review findings F1–F14 (including the Google Chat per-agent identity design), the staged plan for both systems, and the open decision list D1–D8.
 - ⚠️ **Missing:** `harness/docs/proposal.md` — the full `agentic-team-framework-proposal.md` was not part of the uploaded package. A placeholder marks the spot; drop the real proposal in when available.
-- ⏭️ **Next:** portfolio Phase 0, Task 1 (`portfolio/HANDOFF.md` §5) — enumerate repos via the GitHub MCP connector. Per the suggested order, stand up the portfolio system through its Phase 0 pilot **first**; the harness's cost/status reporting has nothing to write into otherwise.
+- ⏭️ **Next:** the plan's Stage 0 checklist (remote-doable prep + decisions), then Stage 1 at the dev computer — portfolio Phase 0, Task 1 onward. Portfolio pilot comes **first**; the harness's cost/status reporting has nothing to write into otherwise.
 
 ## Getting started (new Claude Code session)
 

@@ -10,6 +10,15 @@ notification_routing:
     target: "#example-project-reviews"   # channel or user DM
   google_chat:
     # A real webhook URL embeds key+token query params — it is a secret.
-    # Reference the env var (resolved by notify.py at send time) instead of
-    # pasting the URL into a committed file.
-    webhook_url: ${GOOGLE_CHAT_WEBHOOK_URL}
+    # Reference env vars (resolved by notify.py at send time) instead of
+    # pasting URLs into a committed file.
+    #
+    # Per-agent first-class identity (F14 in docs/implementation-plan.md):
+    # a Chat space can hold multiple named webhooks — create one per
+    # team-lead/PM (name + avatar are set at webhook creation) and map them
+    # by raising role here. notify.py picks the webhook by role; the
+    # review_item schema stays single (hard rule #4).
+    webhooks:
+      project-lead: ${GOOGLE_CHAT_WEBHOOK_URL__EXAMPLE_PROJECT__PROJECT_LEAD}
+    # Single-webhook fallback (original §2.2 shape):
+    # webhook_url: ${GOOGLE_CHAT_WEBHOOK_URL}

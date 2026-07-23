@@ -23,6 +23,11 @@ Same set, sorted/filtered to surface `computed.activity_state` and
 `computed.summary_confidence`. "In-flight but stale" and low-confidence
 drafts are what this view exists to catch.
 
+## View 3 — Drafts awaiting review
+
+Filter `_draft = true`, sorted by `computed.summary_confidence` (low first) —
+this is the Task 4 review worklist. Views 1 and 2 should filter drafts out.
+
 Starting-point Bases config (adjust in the UI; verify field syntax against
 your Obsidian version during Task 5):
 
@@ -46,6 +51,13 @@ views:
       - computed.summary_confidence
       - computed.last_commit
       - status
+  - type: table
+    name: Drafts awaiting review
+    filters:
+      and:
+        - _draft == true
+    order:
+      - computed.summary_confidence
 ```
 
 ## Unclaimed repos

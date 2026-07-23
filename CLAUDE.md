@@ -21,5 +21,7 @@ They were designed as two separate repos and must stay separable: no imports or 
 
 - Task 0 (scaffold) complete for both systems. Every `.py` file is a stub with its contract in the docstring — implementation follows each handoff's task order.
 - `harness/docs/proposal.md` is a placeholder — the full agentic-team-framework proposal wasn't in the uploaded package; add it when available.
-- Next: portfolio Phase 0 Task 1 (needs the GitHub MCP connector pointed at the accounts to track). The portfolio pilot comes before the harness install — the harness reports into it.
-- Stop-and-confirm gates with the user: portfolio Tasks 4 and 8 (`portfolio/HANDOFF.md` §5); harness pilot-project choice (`harness/HANDOFF-agentic-harness.md` §9).
+- `docs/implementation-plan.md` is the working plan: host topology (dev computer / NAS / appserver), review findings F1–F14, staged sequencing for both systems, open decisions D1–D8. Read it before starting any stage; keep its stage checklist current as work lands.
+- Next: portfolio Phase 0 Task 1 — per the plan's Stage 1, it must run on the dev machine (this cloud session's GitHub scope is aiteam-only, finding F5). The portfolio pilot comes before the harness install — the harness reports into it.
+- Stop-and-confirm gates with the user: portfolio Tasks 4 and 8 (`portfolio/HANDOFF.md` §5); harness pilot-project choice (`harness/HANDOFF-agentic-harness.md` §9); decisions D1–D8 in the plan.
+- Google Chat is a first-class channel: per-agent named webhooks first (one-way), two-way Chat app only as an explicit Phase 2 — plan finding F14. Hard rules #4/#5 in `harness/CLAUDE.md` still apply.

@@ -1,0 +1,15 @@
+# Per-project notification routing — one file per project, named
+# <project>.yaml (HANDOFF-agentic-harness.md §2.2). Copy this file to start.
+# Consumed by tools/notify.py. Do NOT collapse projects into one global
+# config — one file per project is what keeps per-team routing (some teams
+# Slack, some Google Chat, some both) tractable.
+notification_routing:
+  project: example-project
+  channels: [slack]                      # slack | google_chat | both
+  slack:
+    target: "#example-project-reviews"   # channel or user DM
+  google_chat:
+    # A real webhook URL embeds key+token query params — it is a secret.
+    # Reference the env var (resolved by notify.py at send time) instead of
+    # pasting the URL into a committed file.
+    webhook_url: ${GOOGLE_CHAT_WEBHOOK_URL}

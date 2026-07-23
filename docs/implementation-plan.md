@@ -150,6 +150,10 @@ Both documents already went through an adversarial review round and carry non-ne
 
 Idempotent, `--dry-run`, and everything it can't do itself it prints as a short checklist. Net: a new project = **one command + judgment fields in Obsidian + one webhook paste.** → Built in Stage 6, proven in Stage 7 by onboarding a second project this way.
 
+### F16 — Harness proposal §7 vs. hard rule #3: where review items surface on the note
+
+The full harness proposal (received 2026-07-23) says the review queue is "pushed actively" by `raise-for-review` **appending to a capped review-queue list on the project note**. The later handoff and `harness/CLAUDE.md` hard rule #3 — and this repo's one cross-system rule — forbid exactly that: the harness never writes into the vault; only the portfolio sync job does. Treat the newer, stricter rule as controlling (it postdates the proposal and exists to keep the vault single-writer), and satisfy §7's *intent* passively: the sync job's Paperclip source (Stage 7) adds **`computed.open_reviews`** — a count plus the top pending items (id, priority, age, Paperclip link) — alongside `cost_*` and `team_status`. Same visibility on the note, no new writer; the Chat/Slack push (F14) remains the *active* channel, which is what the proposal's own §4.2 identifies as the real fix for "I miss pending items." Overrides one line of the proposal, so it's flagged for your sign-off → D9.
+
 ---
 
 ## 4. Staged plan
@@ -162,7 +166,7 @@ Stages are ordered so portfolio Phase 0 completes before the harness installs (i
 - ✅ Homelab repo read; topology grounded in its conventions (§1.0).
 - ☐ SSH prep — **deferred** (D7 answered: your access path is the dev computer, currently off). First-evening-home items: Node 18+ / Python 3.10+ / uv on the appserver (Docker's already there); `git init --bare` the vault remote on a NAS `datapool` dataset. No NFS/SMB mount needed — git rides `ssh nas` (§1.0).
 - ☐ Browser-doable prep: create the GitHub PAT (read scope on org + personal repos); create the Slack app and grab `SLACK_BOT_TOKEN` (`chat:write`, `channels:read`, `im:write`) — defer Events API (D6).
-- ☐ Drop the missing `agentic-team-framework-proposal.md` into `harness/docs/proposal.md` when you have it.
+- ✅ `agentic-team-framework-proposal.md` received and placed at `harness/docs/proposal.md` (2026-07-23) — both systems' doc sets are now complete. It surfaced one conflict with the newer hard rules → F16 / D9.
 
 ### Stage 1 — dev computer: vault + connectors, then enumerate *(at home, ~an evening)*
 1. Obsidian + vault per `portfolio/vault-config/README.md` — **Obsidian Git first**, then Local REST API (copy key), Bases check, Dataview, Templater.
@@ -200,7 +204,7 @@ Stages are ordered so portfolio Phase 0 completes before the harness installs (i
 23. **F15**: build `bin/new-project` — one command registering a project with the portfolio, instantiating its harness team, and writing its comms config (idempotent, `--dry-run`, prints the webhook paste-step).
 
 ### Stage 7 — integration + full acceptance
-24. Extend `portfolio/sync/sync_computed_fields.py` with Paperclip as a second source (`computed.cost_by_stage`, `cost_total_mtd`, `team_status`) — the write stays in the portfolio subtree, per the single-writer rule.
+24. Extend `portfolio/sync/sync_computed_fields.py` with Paperclip as a second source (`computed.cost_by_stage`, `cost_total_mtd`, `team_status`, and — per D9 — `open_reviews`) — the write stays in the portfolio subtree, per the single-writer rule.
 25. **H-Task 9 / harness acceptance** (`harness/HANDOFF-agentic-harness.md` §8): real review item → rendered alerts with working links; SLA escalation fires on an intentionally-ignored low item; sane per-role costs; one-step pause visible to the next sync; no agent with `dangerouslySkipPermissions`.
 26. **F15 proof:** onboard a second project purely by configuration — one `bin/new-project` run, judgment fields in Obsidian, one webhook paste. Anything that required editing code is a bug in the onboarding flow.
 27. **Gate:** both acceptance checklists green → discuss rolling the portfolio out to the remaining ~15 repos and (separately, later) a second harness team.
@@ -220,6 +224,7 @@ Stages are ordered so portfolio Phase 0 completes before the harness installs (i
 | D6 | Google Chat identity model (F14): per-agent named webhooks ship in Stage 6; approve the two-way app (tier 2, Pub/Sub) as Phase 2; any need for fully separate app identities (tier 3)? | Stage 6 / Phase 2 | Tier 1 now — Slack and Chat both ship in Stage 6; tier 2 next; tier 3 only on demonstrated need. |
 | D7 | Remote reachability while away | **answered** | Tailnet exists (§1.0), but your access path is the dev computer — currently off. Stage 0's SSH prep waits until you're home; repo/plan/browser work proceeds now. |
 | D8 | Changelog 140-char cap + extra confidence signals | revisit at Stage 3 | Keep both as spec'd; adjust only on evidence from the pilot (the handoffs' own open questions). |
+| D9 | Review-queue visibility on the note (F16): `computed.open_reviews` via the sync job, or the proposal §7's direct append by `raise-for-review`? | before Stage 7 | Sync-job route — keeps the vault single-writer; the proposal line predates that rule. |
 
 ---
 

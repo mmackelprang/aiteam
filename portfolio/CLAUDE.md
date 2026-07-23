@@ -35,9 +35,10 @@ Full frontmatter shape and the confidence-signal table: `HANDOFF.md` §2.
 ## Conventions
 
 - One concern per module: `bootstrap/` (enumerate → filter_defaults → ingest, in that order), `sync/`, `portfolio_updater/`.
+- `common/` holds the portfolio-internal shared helpers — the byte-preserving frontmatter splice engine (frontmatter.py, the F6 piece: textual key-span splicing, never a YAML round-trip, `verify_untouched()` before every write), vault access, confidence signals, and the GitHub/fixture data sources. Shared within this subtree only; never imported from `../harness`. Tests: `python3 -m pytest portfolio/tests`.
 - Secrets (`GITHUB_TOKEN`, `OBSIDIAN_API_KEY`, `OBSIDIAN_VAULT_PATH`) come from the gitignored `.env` — see `.env.example`.
 - Cross-system: the harness (`../harness/`) exposes cost/team-status read-interfaces; **this** subtree's sync job is what will eventually write `computed.cost_by_stage`, `computed.cost_total_mtd`, `computed.team_status` into the vault (see `../harness/HANDOFF-agentic-harness.md` §5). Nothing here imports from `../harness/`.
 
 ## Current phase
 
-Phase 0 (pilot, 3–5 repos). Task 0 (scaffold) done; next is `HANDOFF.md` §5 Task 1. Stop and confirm with the user before Task 4 (the human review pass is theirs, never auto-approved) and before Task 8 (rollout beyond the pilot). Open questions to raise while building — sync-job placement, changelog cap, extra confidence signals, pilot set: `HANDOFF.md` §7.
+Phase 0 — pilot set resolved (D1): **RTest, homelab, FamilyWorkspace**. Off-site build pass done 2026-07-23: the updater, sync engine (splice + no-op guard + dashboard markers), unclaimed-repos, and the bootstrap trio are implemented and fixture-tested (`--source fixture:PATH` runs the whole pipeline offline). ⚠ Still pending on-site: the live GitHub REST client is unverified until Stage 3, and real enumeration runs on the dev machine (plan F5). Stop and confirm with the user before Task 4 (the human review pass is theirs, never auto-approved) and before Task 8 (rollout beyond the pilot).

@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Read",
+      "Glob",
+      "Grep",
+      "Bash(git status)",
+      "Bash(git log:*)",
+      "Bash(git diff:*)",
+      "Bash(git show:*)",
+      "Bash(git branch:*)",
+      "Bash(python3 /srv/aiteam/repo/harness/tools/raise_for_review.py:*)",
+      "Bash(python3 /srv/aiteam/repo/harness/tools/team_status.py:*)",
+      "Bash(python3 /srv/aiteam/repo/portfolio/portfolio_updater/update.py:*)"
+    ],
+    "deny": [
+      "Bash(git push:*)",
+      "Bash(sudo:*)",
+      "Bash(rm:*)",
+      "Bash(docker:*)",
+      "Bash(ssh:*)",
+      "Bash(curl:*)",
+      "Bash(wget:*)"
+    ]
+  }
+}

@@ -30,9 +30,11 @@ Full schemas (review item, notification routing, trust tier, team template): `HA
 ## Conventions
 
 - `raise_for_review.py`, `notify.py`, cost/team-status read-interfaces each live in their own module under `tools/` — one concern per file, matching the narrow-write-surface philosophy throughout this whole system (portfolio and harness both).
+- Shared pieces are one-concern modules too: `tools/review_schema.py` (the one `review_item` dataclass + validation + SLA math — the only place the shape lives) and `tools/cost_events.py` (the tagged JSONL cost-event log). Tests: `python3 -m pytest harness/tests`.
+- `config/allowlists/` holds the Tier-0 per-role permission presets (D4/F10) — the operational meaning of "all actions gated": curated allowlist, hard denies, and everything else routed through `raise_for_review.py`.
 - Secrets (`ANTHROPIC_API_KEY`, `SLACK_BOT_TOKEN`, `SLACK_SIGNING_SECRET`, `GOOGLE_CHAT_WEBHOOK_URL`) come from a gitignored secrets file — never hardcoded, never committed.
 - Per-project config (`notification_routing/`, `trust_tiers/`) is one file per project — don't collapse into a single global config; that's what makes per-team routing (some teams Slack, some Google Chat, some both) and per-project tier history tractable.
 
 ## Current phase
 
-Phase 0 (pilot, one project). See `HANDOFF-agentic-harness.md` §6 for the task list, §7 for what's explicitly out of scope, §8 for acceptance criteria before proposing rollout beyond the pilot.
+Phase 0 — pilot project resolved (D2): **FamilyWorkspace**. See `HANDOFF-agentic-harness.md` §6 for the task list, §7 for what's explicitly out of scope, §8 for acceptance criteria before proposing rollout beyond the pilot. Off-site build pass done 2026-07-23: review schema, raise-for-review, both notify renderers (per-role Google Chat webhooks per F14), and the cost log + rollup are implemented and tested. ⚠ Honest seams awaiting the appserver: `HttpPaperclipClient` raises until reconciled with the real Paperclip API (Stage 5); `notify.py`'s send functions and `team_status.py` are live-unverified/stub until Stages 5–6.

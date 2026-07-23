@@ -1,0 +1,16 @@
+# Per project+role trust tier — one file per project+role, named
+# <project>--<role>.yaml (HANDOFF-agentic-harness.md §2.3).
+#
+# HARD RULE (CLAUDE.md #2): tiers are Board-granted only. Every new
+# project/agent starts at Tier 0 (no dangerouslySkipPermissions, all
+# actions gated, everything routed to review). Raising a tier is a manual,
+# versioned edit the user makes — never automated, and never something a
+# session does "to unblock" a stuck agent. Keep prior changes in `history`
+# for audit/rollback.
+trust_tier:
+  project: example-project
+  agent_role: engineer
+  tier: 0            # 0 (default) | 1 | 2
+  granted_by: you
+  granted_at: 2026-07-23
+  history: []

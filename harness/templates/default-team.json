@@ -1,0 +1,78 @@
+{
+  "_meta": {
+    "status": "DRAFT — replace with the real exported Paperclip company template once Paperclip is installed (HANDOFF-agentic-harness.md §4.1, §2.4). Kept in git either way, so org-chart changes stay diffable, reviewable commits (CLAUDE.md hard rule #7).",
+    "shape_note": "Field names follow the handoff's vocabulary (claude_local adapter, budgetMonthlyCents, heartbeat); reconcile with Paperclip's actual export schema at install time.",
+    "roles_note": "Project Lead plus the six delivery roles (research/design/engineer/qa/release/support). Budgets and heartbeat intervals are per-project tuning knobs at instantiation — budgetMonthlyCents must never be left unset (Task 2). Amounts below are placeholders.",
+    "trust_note": "Every agent starts at trust tier 0: no dangerouslySkipPermissions, all actions gated, everything routes to review. Tier raises are Board-granted manual edits under config/trust_tiers/ (CLAUDE.md hard rule #2).",
+    "secrets_note": "Each adapter references its Anthropic key via Paperclip secret syntax, e.g. ${secrets.anthropic_key} — never hardcoded here (HANDOFF §4.3)."
+  },
+  "name": "default-team",
+  "version": 1,
+  "agents": [
+    {
+      "role": "project-lead",
+      "title": "Project Lead",
+      "adapter": "claude_local",
+      "cwd": null,
+      "heartbeat": "15m",
+      "heartbeat_note": "frequent / on-demand",
+      "budgetMonthlyCents": 10000,
+      "trust_tier": 0
+    },
+    {
+      "role": "research",
+      "title": "Research",
+      "adapter": "claude_local",
+      "cwd": null,
+      "heartbeat": "2h",
+      "budgetMonthlyCents": 5000,
+      "trust_tier": 0
+    },
+    {
+      "role": "design",
+      "title": "Design",
+      "adapter": "claude_local",
+      "cwd": null,
+      "heartbeat": "2h",
+      "budgetMonthlyCents": 5000,
+      "trust_tier": 0
+    },
+    {
+      "role": "engineer",
+      "title": "Engineer",
+      "adapter": "claude_local",
+      "cwd": "<pilot-repo-worktree>",
+      "heartbeat": "30m",
+      "budgetMonthlyCents": 15000,
+      "trust_tier": 0
+    },
+    {
+      "role": "qa",
+      "title": "QA",
+      "adapter": "claude_local",
+      "cwd": "<pilot-repo-worktree>",
+      "heartbeat": "1h",
+      "budgetMonthlyCents": 7500,
+      "trust_tier": 0
+    },
+    {
+      "role": "release",
+      "title": "Release/Deploy",
+      "adapter": "claude_local",
+      "cwd": "<pilot-repo-worktree>",
+      "heartbeat": "on-demand",
+      "budgetMonthlyCents": 5000,
+      "trust_tier": 0
+    },
+    {
+      "role": "support",
+      "title": "Support",
+      "adapter": "claude_local",
+      "cwd": null,
+      "heartbeat": "event-triggered",
+      "heartbeat_note": "mostly event-triggered, minimal polling",
+      "budgetMonthlyCents": 2500,
+      "trust_tier": 0
+    }
+  ]
+}

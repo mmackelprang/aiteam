@@ -1,6 +1,6 @@
 # Implementation Plan — Portfolio System + Agentic Team Harness
 
-**Date:** 2026-07-23 · **Status:** proposed, awaiting review of the decision list in §5
+**Date:** 2026-07-23 · **Status:** active — decisions D1–D9 resolved 2026-07-23 (§5)
 **Companions:** `portfolio/HANDOFF.md` and `harness/HANDOFF-agentic-harness.md` stay the canonical task-by-task detail; this plan sequences both, maps every component onto your three machines, and folds in the review findings from §3. Task numbers below (e.g. "P-Task 3", "H-Task 4") refer to those handoffs.
 
 ---
@@ -69,7 +69,7 @@ flowchart LR
 | Paperclip + embedded Postgres | Appserver — `/srv/aiteam/`, data on `/data/aiteam/` | `npx paperclipai onboard` — **pin the version** (F11) | Stage 5 | Dashboard `:3100`, LAN/tailnet only — no Caddy site block (§1.0). |
 | `appserver-aiteam` GHA runner + `deploy-aiteam.yml` | Appserver (`/srv/gha-runners/`) | copy the runner template block (4 fields) | Stage 4 | The deploy mechanism for the `/srv/aiteam` stack, per homelab CI/CD conventions (§1.0). |
 | Homelab registration (service doc, `DASHBOARDS.md`, Homepage, `SECRETS.md` pointers) | homelab repo + NAS Homepage | edit + `capture.sh` | Stages 4–6 | Keeps the DR docs truthful (§1.0). |
-| Claude Code CLI for agents (`claude_local` adapters) | Appserver (steady-state); dev computer as optional burst/manual-drive host | installer + per-agent auth | Stage 5 | Worktrees of the pilot repo for code-touching roles. |
+| Claude Code CLI for agents (`claude_local` adapters) | Appserver (steady-state); dev computer as optional burst/manual-drive host | installer + subscription auth (`claude login`, D5) | Stage 5 | Worktrees of the pilot repo for code-touching roles. |
 | `harness/tools/*` (H-Tasks 3, 4, 6, 7) | Appserver | repo checkout | Stage 6 | notify.py needs outbound HTTPS only (one-way Phase 0/1). |
 | SLA escalation + daily digest (H-Task 5) | Appserver | systemd timer/cron | Stage 6 | Must live on an always-on box, not the dev machine. |
 | Cost-event log (JSONL, OTel GenAI-shaped tags) | Appserver, archived to NAS | written by agent wrapper/hooks | Stage 5–6 | Tagged project/role/task from the first event (hard rule). |
@@ -83,7 +83,7 @@ flowchart LR
 |---|---|---|
 | Dev computer | `portfolio/.env` | `GITHUB_TOKEN`, `OBSIDIAN_API_KEY`, `OBSIDIAN_VAULT_PATH` |
 | Appserver | sync container env | `GITHUB_TOKEN`, `OBSIDIAN_VAULT_PATH=/mnt/vault` (no API key — filesystem/git path, F1) |
-| Appserver | `harness/.env` + Paperclip secret store | `ANTHROPIC_API_KEY` (or per-role, D5), `SLACK_BOT_TOKEN`, `GOOGLE_CHAT_WEBHOOK_URL(s)`; `SLACK_SIGNING_SECRET` only when two-way lands (Phase 2) |
+| Appserver | `harness/.env` + Paperclip secret store | Claude **subscription auth** via `claude login` (D5 — `ANTHROPIC_API_KEY` is the fallback, not the default), `SLACK_BOT_TOKEN`, `GOOGLE_CHAT_WEBHOOK_URL(s)`; `SLACK_SIGNING_SECRET` only when two-way lands (Phase 2) |
 | NAS | — | none (storage only) |
 
 ---
@@ -162,7 +162,7 @@ Stages are ordered so portfolio Phase 0 completes before the harness installs (i
 
 ### Stage 0 — now, from anywhere ✅ *(mostly done this session)*
 - ✅ Repo scaffolded (Task 0 of both handoffs), this plan written.
-- ☐ You: review this plan, answer the decision list (§5).
+- ✅ Decision list answered — all nine resolved (§5, 2026-07-23).
 - ✅ Homelab repo read; topology grounded in its conventions (§1.0).
 - ☐ SSH prep — **deferred** (D7 answered: your access path is the dev computer, currently off). First-evening-home items: Node 18+ / Python 3.10+ / uv on the appserver (Docker's already there); `git init --bare` the vault remote on a NAS `datapool` dataset. No NFS/SMB mount needed — git rides `ssh nas` (§1.0).
 - ☐ Browser-doable prep: create the GitHub PAT (read scope on org + personal repos); create the Slack app and grab `SLACK_BOT_TOKEN` (`chat:write`, `channels:read`, `im:write`) — defer Events API (D6).
@@ -173,7 +173,7 @@ Stages are ordered so portfolio Phase 0 completes before the harness installs (i
 2. Wire the vault to the NAS bare remote (F2): `git init` in the vault (if new), add remote, configure Obsidian Git pull-on-open / auto-commit-push.
 3. Register both MCP connectors; fill `portfolio/.env`.
 4. **P-Task 1** (enumerate — must run here, F5) and **P-Task 2** (filter → checklist in `bootstrap/select.md`).
-5. **Gate:** confirm the pilot set of 3–5 repos (D1) before anything ingests.
+5. **Gate — resolved (D1):** pilot set = **RTest, homelab, FamilyWorkspace**. Re-confirm only if enumeration surfaces a surprise.
 
 ### Stage 2 — dev computer: pilot bootstrap *(plan an afternoon for the review pass)*
 6. **P-Task 3** (ingest: signals, confidence, `_draft: true` notes).
@@ -193,7 +193,7 @@ Stages are ordered so portfolio Phase 0 completes before the harness installs (i
 ### Stage 5 — appserver: Paperclip + the pilot team *(harness Phase 0 begins)*
 15. **H-Task 1**: install Paperclip into the `/srv/aiteam` stack (pin the version; Postgres data under `/data/aiteam/`), confirm `:3100` (LAN/tailnet only), stand up the nightly `pg_dump` → NAS over `ssh nas` (F11); add the dashboard to homelab `DASHBOARDS.md` + Homepage.
 16. Claude Code CLI + per-agent auth (D5); worktrees of the pilot repo for code-touching roles.
-17. **H-Task 2**: instantiate the six-role team from `harness/templates/default-team.json` (reconcile the draft with Paperclip's real export format, budgets set, heartbeats per role) — pilot project per D2.
+17. **H-Task 2**: instantiate the six-role team from `harness/templates/default-team.json` (reconcile the draft with Paperclip's real export format, budgets set, heartbeats per role) — pilot project = **FamilyWorkspace** (D2). Caution: FamilyWorkspace deploys to a **public production site** through the existing `appserver-fw` runner — at Tier 0 the Release/Deploy role's actions stay gated through review, and the `deploy-fw` workflow remains the only production path (agents propose; you approve).
 18. **H-Task 8** early, per F10: Tier-0 allowlists per role in each worktree; everything outside them routes to review (D4). Trust-tier files at 0 in `config/trust_tiers/`.
 19. Cost-event JSONL wiring with project/role/task tags from the first event; heartbeat token logging (F13).
 
@@ -212,19 +212,21 @@ Stages are ordered so portfolio Phase 0 completes before the harness installs (i
 
 ---
 
-## 5. Decisions needed from you
+## 5. Decisions — all resolved 2026-07-23
 
-| # | Decision | Needed by | Recommendation |
-|---|---|---|---|
-| D1 | Pilot set of 3–5 repos | end of Stage 1 | Mostly well-documented active repos, plus **one** poorly-documented one to exercise the low-confidence path. |
-| D2 | Harness pilot project | before Stage 5 | One of the D1 repos with real current activity, so the team has actual work. |
-| D3 | Appserver→vault write transport | Stage 4 | **Git-as-transport** (clone/commit/push against NAS `vault.git`) over direct NFS writes — conflicts become visible merges, it doubles as backup, and it rides the existing `ssh nas` alias with no new NFS/SMB export (§1.0). |
-| D4 | Tier 0 = curated per-role allowlist, overflow → `raise_for_review` (F10) | before Stage 5 | Sign off on this interpretation — it touches the trust rules, so it's explicitly yours. |
-| D5 | Anthropic auth: single key + tags vs. per-role keys | Stage 5 | Single key + tagging is simpler; per-role keys add a free per-role cross-check in the Anthropic Console. Either satisfies the tagging rule. |
-| D6 | Google Chat identity model (F14): per-agent named webhooks ship in Stage 6; approve the two-way app (tier 2, Pub/Sub) as Phase 2; any need for fully separate app identities (tier 3)? | Stage 6 / Phase 2 | Tier 1 now — Slack and Chat both ship in Stage 6; tier 2 next; tier 3 only on demonstrated need. |
-| D7 | Remote reachability while away | **answered** | Tailnet exists (§1.0), but your access path is the dev computer — currently off. Stage 0's SSH prep waits until you're home; repo/plan/browser work proceeds now. |
-| D8 | Changelog 140-char cap + extra confidence signals | revisit at Stage 3 | Keep both as spec'd; adjust only on evidence from the pilot (the handoffs' own open questions). |
-| D9 | Review-queue visibility on the note (F16): `computed.open_reviews` via the sync job, or the proposal §7's direct append by `raise-for-review`? | before Stage 7 | Sync-job route — keeps the vault single-writer; the proposal line predates that rule. |
+Board answers, recorded here as the standing record; the affected stages reference them.
+
+| # | Decision | Resolution (2026-07-23) |
+|---|---|---|
+| D1 | Pilot set of repos | **RTest** (large and deep — exercises depth), **homelab** (docs/infra repo, no app code — exercises the low-confidence/unusual-shape path), **FamilyWorkspace** (active and deployed). Bootstrap still enumerates *all* repos so the unclaimed-repos queue is real from day one. |
+| D2 | Harness pilot project | **FamilyWorkspace.** Its stack already runs on the appserver with a deploy path via the `appserver-fw` runner. See the Stage 5 caution: it deploys to a **public** production site, so Tier 0 gating of the Release/Deploy role is doing real work here. |
+| D3 | Appserver→vault write transport | **Git-as-transport approved:** clone/commit/push against NAS `vault.git` over the existing `ssh nas` alias (F1/F2, §1.0). |
+| D4 | Tier 0 semantics | **Signed off:** Tier 0 = curated per-role allowlist in each role's worktree; everything outside it routes to `raise_for_review` (F10). Tiers 1/2 become versioned allowlist presets in `config/trust_tiers/`. |
+| D5 | Anthropic auth | **Subscription-auth first:** the pilot's agents run against the monthly Claude subscription — one-time `claude login` per execution host (appserver, dev box; OAuth via SSH port-forward when home), which `claude_local` inherits. No API key to start. Cost tracking is unaffected (rule #6 tags token counts per project/role/task; dollars are notional at API list prices). Caveats: all seven agents share the account's rolling usage windows — a capped window stalls agents until reset (Max-tier headroom recommended; Pro will pinch). If caps bite or billing-grade per-role attribution is ever needed, switching to `ANTHROPIC_API_KEY` (single or per-role) is a config-only change. |
+| D6 | Google Chat identity model | **As recommended (F14):** tier 1 per-agent named webhooks ship in Stage 6 alongside Slack; the tier-2 two-way app (Pub/Sub) is approved as Phase 2; tier 3 only on demonstrated need. |
+| D7 | Remote reachability while away | Tailnet exists but access rides the (currently off) dev computer — SSH prep waits until home; repo/plan/browser work proceeds now (§1.0). |
+| D8 | Changelog cap + confidence signals | Keep as spec'd (140-char cap, default signal table); adjust only on pilot evidence at Stage 3. |
+| D9 | Review-queue visibility on the note | **Sync-job route (F16):** `computed.open_reviews` written by the portfolio sync's Paperclip source; `raise_for_review` never touches the vault. Overrides proposal §7's direct-append line. |
 
 ---
 

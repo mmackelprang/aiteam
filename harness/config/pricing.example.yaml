@@ -1,0 +1,14 @@
+# Notional pricing table for cost_summary.py (D5: subscription auth means
+# dollars are derived, not billed — token counts are the ground truth).
+#
+# Copy to pricing.yaml (gitignored is fine; nothing here is secret) and fill
+# in CURRENT per-million-token prices from https://docs.claude.com/en/docs/about-claude/pricing
+# — prices change; do NOT trust any numbers baked into old commits.
+#
+# cost_summary marks rollups cost_usd_incomplete: true when any event's
+# model is missing from this table, so a partial table never silently
+# understates spend.
+models:
+  # claude-example-model:
+  #   input_per_mtok: 0.00    # $ per 1M input tokens — fill from the pricing page
+  #   output_per_mtok: 0.00   # $ per 1M output tokens

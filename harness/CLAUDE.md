@@ -35,6 +35,10 @@ Full schemas (review item, notification routing, trust tier, team template): `HA
 - Secrets (`ANTHROPIC_API_KEY`, `SLACK_BOT_TOKEN`, `SLACK_SIGNING_SECRET`, `GOOGLE_CHAT_WEBHOOK_URL`) come from a gitignored secrets file — never hardcoded, never committed.
 - Per-project config (`notification_routing/`, `trust_tiers/`) is one file per project — don't collapse into a single global config; that's what makes per-team routing (some teams Slack, some Google Chat, some both) and per-project tier history tractable.
 
+## Watch list — evaluated, not adopted
+
+- **Beads** (github.com/steveyegge/beads — per-repo agent work-item graph, MIT/self-hosted): would sit *below* Paperclip (fine-grained decomposition within an assignment), never as a review path (hard rule #1 unaffected). Do not install or wire up unless the adoption triggers in `../docs/implementation-plan.md` F17 fire **and** the user signs off; first step is then the FamilyWorkspace engineer worktree only.
+
 ## Current phase
 
 Phase 0 — pilot project resolved (D2): **FamilyWorkspace**. See `HANDOFF-agentic-harness.md` §6 for the task list, §7 for what's explicitly out of scope, §8 for acceptance criteria before proposing rollout beyond the pilot. Off-site build pass done 2026-07-23: review schema, raise-for-review, both notify renderers (per-role Google Chat webhooks per F14), and the cost log + rollup are implemented and tested. ⚠ Honest seams awaiting the appserver: `HttpPaperclipClient` raises until reconciled with the real Paperclip API (Stage 5); `notify.py`'s send functions and `team_status.py` are live-unverified/stub until Stages 5–6.

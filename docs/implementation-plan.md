@@ -154,6 +154,21 @@ Idempotent, `--dry-run`, and everything it can't do itself it prints as a short 
 
 The full harness proposal (received 2026-07-23) says the review queue is "pushed actively" by `raise-for-review` **appending to a capped review-queue list on the project note**. The later handoff and `harness/CLAUDE.md` hard rule #3 — and this repo's one cross-system rule — forbid exactly that: the harness never writes into the vault; only the portfolio sync job does. Treat the newer, stricter rule as controlling (it postdates the proposal and exists to keep the vault single-writer), and satisfy §7's *intent* passively: the sync job's Paperclip source (Stage 7) adds **`computed.open_reviews`** — a count plus the top pending items (id, priority, age, Paperclip link) — alongside `cost_*` and `team_status`. Same visibility on the note, no new writer; the Chat/Slack push (F14) remains the *active* channel, which is what the proposal's own §4.2 identifies as the real fix for "I miss pending items." Overrides one line of the proposal, so it's flagged for your sign-off → D9.
 
+### F17 — Beads (per-repo agent issue tracker): watch, don't adopt — evidence-based triggers
+
+Asked 2026-07-23 (via a Better Stack guide; that page blocks automated readers, so this assessment comes from the Beads repo itself — github.com/steveyegge/beads). Beads is MIT-licensed with **no paid tiers or per-repo limits** — fully self-hosted, so at ~20 repos the scale cost is operational (Dolt databases, sync, schema migrations per repo), not license fees. What it does: a durable, dependency-aware work-item graph per repo for agents — `bd ready` returns unblocked tasks, atomic claim/close, `bd prime` / `bd remember` persistent cross-session memory, Dolt-backed with git-remote sync, an MCP server, and Claude Code hooks.
+
+**Where it would fit — one layer, boundaries unmoved.** Beads maps to the layer *below* Paperclip: an agent's fine-grained decomposition of its assignment across many heartbeats (state that today lives only in context windows and ad-hoc notes). Paperclip stays authoritative for *what the team works on and whether it may* (assignments, budgets, approvals, audit); Beads would only ever answer "what's the next step within my assignment." The review queue remains `raise_for_review` → Paperclip only — **Beads is never a review path** (hard rule #1). GitHub Issues remain the human-facing tracker. The vault is untouched (at most, someday, a `computed.ready_work` count via the sync job's read-interface pattern).
+
+**Why not in Phase 0:** (1) a second task system before Paperclip's own is validated invites "what should I work on?" split-brain unless the Paperclip-decides-what / Beads-decides-next-step discipline is already proven; (2) embedded mode is single-writer — engineer + QA + lead sharing one repo's graph needs Dolt server mode on the appserver, extra moving parts mid-pilot; (3) `bd`'s write/sync behaviour needs Tier-0 allowlist carve-outs, touching the trust design just signed off (D4).
+
+**Adoption triggers — evaluate at H-Task 9, after ~2 weeks of F13 heartbeat data:**
+1. Pilot agents demonstrably lose cross-session work state (re-planning every heartbeat, duplicated or forgotten subtasks); or
+2. Paperclip's task granularity proves too coarse for multi-session engineering work; or
+3. F13's numbers show heartbeat re-context overhead worth attacking — `bd prime` is a direct fix candidate for the harness proposal §8's open measurement question.
+
+**If triggered:** pilot in the FamilyWorkspace **engineer worktree only** — embedded mode (single writer, no server), contributor/stealth mode so `.beads/` stays out of FamilyWorkspace PRs, `bd` allowlisted for that one role — then expand on evidence. Adoption is an explicit Board call with your sign-off, same treatment as Headroom (portfolio proposal §10 precedent).
+
 ---
 
 ## 4. Staged plan

@@ -38,6 +38,7 @@ Full schemas (review item, notification routing, trust tier, team template): `HA
 ## Watch list — evaluated, not adopted
 
 - **Beads** (github.com/steveyegge/beads — per-repo agent work-item graph, MIT/self-hosted): would sit *below* Paperclip (fine-grained decomposition within an assignment), never as a review path (hard rule #1 unaffected). Do not install or wire up unless the adoption triggers in `../docs/implementation-plan.md` F17 fire **and** the user signs off; first step is then the FamilyWorkspace engineer worktree only.
+- **claude-mem** (the user's fork, running as the NAS team-memory server): candidate memory layer for the agents — adversarially reviewed 2026-07-24, plan F18. Key facts: server mode currently captures **without** injecting (the §8 payoff doesn't exist yet in that topology); its hooks run outside D4's allowlists (install = Board-signed trust grant); its generation worker is metered API spend outside D5. Do not install the plugin in any agent worktree or point anything at the NAS server unless F18's six gates hold **and** the user signs off. The memory-layer choice (Paperclip-native vs Beads `bd prime` vs claude-mem) is **one** Board decision at H-Task 9 on F13 evidence — F17/F18.
 
 ## Current phase
 

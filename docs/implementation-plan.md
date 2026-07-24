@@ -169,6 +169,31 @@ Asked 2026-07-23 (via a Better Stack guide; that page blocks automated readers, 
 
 **If triggered:** pilot in the FamilyWorkspace **engineer worktree only** — embedded mode (single writer, no server), contributor/stealth mode so `.beads/` stays out of FamilyWorkspace PRs, `bd` allowlisted for that one role — then expand on evidence. Adoption is an explicit Board call with your sign-off, same treatment as Headroom (portfolio proposal §10 precedent).
 
+**Amended 2026-07-24 (see F18):** trigger 3 is shared with claude-mem — the two tools compete for the same measured pain, so it resolves as **one** memory-layer decision at H-Task 9 (Paperclip-native packet vs `bd prime` vs claude-mem injection), not two separate adoptions.
+
+### F18 — claude-mem (the owner's fork): memory-layer candidate — adversarially reviewed, gated, decided jointly with F17
+
+**Context (2026-07-24).** The owner's fork of `thedotmack/claude-mem` (v13.11.0 base) runs as a live team-memory server on the NAS (server + generation worker + Postgres + Valkey + Chroma; API-key auth with per-key actor attribution; tailnet-only ACL — homelab `nas/services/claude-mem.md`). The fork's own contribution is the *operationalized team pilot*: deployment + runbooks, the connection-config UI with test-before-activate, and the local server-beta harness. An adversarial agent reviewed the position "adopt as the harness agents' memory layer at the Phase 0→1 boundary." **Verdict: include-at-gate survives, but only as modified below; immediate Phase-0 inclusion rejected** (trust surface + metered cost up front for a payoff that is not built yet, and a dependency inversion — using an unproven pilot to de-risk the fork); **full exclusion rejected** (its best arguments prove sequencing, not never, and it would discard the estate's only semantic-memory asset right before F17's own trigger may demand one).
+
+**Source-verified decisive facts:**
+- **Server mode captures but does not inject.** `src/cli/handlers/session-init.ts:92`: semantic injection is skipped in server mode; the SessionStart context handler reads only the *local* worker. Adopting the NAS topology today = capture without recall — all cost, zero §8 benefit.
+- The SessionStart hook matcher is `startup|clear|compact` — if Paperclip *resumes* sessions between heartbeats, injection never fires even once parity lands (verifiable only at Stage 5).
+- **Single-writer safety confirmed** (the position's strongest surviving plank): repo-write features default off (`SettingsDefaultsManager.ts:141`), injection is hook-stdout, vault and CLAUDE.md untouched — hard rules #1–#3 and D9 are unthreatened.
+- **Visibility:** new observations default `visibility='team'` (`schema.ts:408-409`); the one-time `private` backfill covers pre-visibility *history* only. The homelab service doc claimed the opposite — corrected 2026-07-24.
+- **Cost is metered and outside D5:** the generation worker requires a billed API key (not subscription auth); the fork's own anchors ($219/mo at 645 obs/day; one runaway session emitted 3,955 observations) put seven always-on agents at order **$300–600/month**, uncapped by Paperclip budgets and invisible to the rule-#6 cost log unless surfaced.
+
+**The one memory-layer decision (amends F17).** At **H-Task 9, on F13 evidence**, a single Board decision compares **Paperclip's native context packet vs Beads `bd prime` vs claude-mem injection** for the §8 re-context problem. Until then both tools are watch-list; neither is installed.
+
+**Gates before claude-mem can even enter that bake-off:**
+1. **Injection parity:** server-mode context injection built (the `/v1` context path wired into the SessionStart/session-init handlers) and proven to fire under Paperclip's actual invocation mode (resume vs startup checked).
+2. **Real capture verification** — not `/healthz`, which is a hardcoded string: the fork's pilot once probed 200 for 11 days while capturing nothing, and an unattended fleet makes silent fallback invisible.
+3. **Tenancy isolation:** a dedicated Postgres team row for agents (never the humans' team), an explicit visibility policy for agent rows (default-private inversion recommended), per-role API keys (actor = role) with per-role data dirs.
+4. **Trust:** plugin installation treated as a Board-signed Tier-0 grant — its hooks execute in every session *outside* D4's allowlists — with the plugin version pinned (F11 pattern) and repo-write flags config-asserted off.
+5. **Cost capped and tagged, not monitored:** enable the upstream token-cap/quota knobs (default off) and surface key→role spend into the harness cost log (hard rule #6).
+6. **Poisoning guard:** no unattended injection until a retraction/expiry story exists and injected context is logged per session — otherwise a wrong conclusion becomes durable team state re-injected forever, and Paperclip's audit trail cannot reconstruct what an agent actually saw.
+
+**Meanwhile, how aiteam takes advantage of the fork:** aiteam is the fork's customer roadmap. Gates 1–2 (injection parity, capture verification) become its headline milestones — its own queue #30's first real client would be this harness — and the fork's connection-test work exists precisely to de-risk this integration.
+
 ---
 
 ## 4. Staged plan

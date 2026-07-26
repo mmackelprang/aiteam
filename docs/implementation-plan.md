@@ -140,6 +140,8 @@ Both documents already went through an adversarial review round and carry non-ne
 
 **Placement — no separate repo or folder at any tier.** Tier 1 is pure configuration inside `harness/` (routing YAML + env vars — no new code surface). The tier-2 two-way app is a small always-on service that consumes the same `review_item` schema and renderers, so it belongs beside them: **`harness/chat_app/`**, deployed as one more container in the `/srv/aiteam` appserver stack. Only Google-side *configuration* (one GCP project, Chat API config, Pub/Sub topic + subscription) lives outside the repo, documented in `harness/docs/` when Phase 2 starts. If the subtrees ever split into two repos, `chat_app/` travels with the harness.
 
+**Superseded 2026-07-24 (F19):** the multi-app requirement (aitrader, job-hunter, …) broke this placement's harness-only premise — the Chat plumbing now lives in its own repo, `mmackelprang/chat-gateway`. The tier model and identity design above stand unchanged.
+
 ### F15 — Adding a project/PM must be configuration, not development
 
 **Requirement (2026-07-23):** onboarding `new-project` should be one registration that (a) registers it with the portfolio, (b) stands up its harness team, and (c) enables comms with that project's manager/PM. The one-file-per-project convention both systems already use (vault note; `notification_routing/<project>.yaml`; `trust_tiers/<project>--<role>.yaml`; Paperclip team instantiated from the template) is exactly what makes this scriptable. Build a root-level **`bin/new-project <name> [--repo owner/name]`** wrapper that invokes each subtree's own CLI in order — subprocess calls, never imports, so the subtrees stay separable (sanctioned root-level glue; if the repos ever split, it decomposes into two commands). Runs from the dev computer or the appserver — it needs a repo checkout and the Paperclip API. What it does:
@@ -168,6 +170,37 @@ Asked 2026-07-23 (via a Better Stack guide; that page blocks automated readers, 
 3. F13's numbers show heartbeat re-context overhead worth attacking — `bd prime` is a direct fix candidate for the harness proposal §8's open measurement question.
 
 **If triggered:** pilot in the FamilyWorkspace **engineer worktree only** — embedded mode (single writer, no server), contributor/stealth mode so `.beads/` stays out of FamilyWorkspace PRs, `bd` allowlisted for that one role — then expand on evidence. Adoption is an explicit Board call with your sign-off, same treatment as Headroom (portfolio proposal §10 precedent).
+
+**Amended 2026-07-24 (see F18):** trigger 3 is shared with claude-mem — the two tools compete for the same measured pain, so it resolves as **one** memory-layer decision at H-Task 9 (Paperclip-native packet vs `bd prime` vs claude-mem injection), not two separate adoptions.
+
+### F18 — claude-mem (the owner's fork): memory-layer candidate — adversarially reviewed, gated, decided jointly with F17
+
+**Context (2026-07-24).** The owner's fork of `thedotmack/claude-mem` (v13.11.0 base) runs as a live team-memory server on the NAS (server + generation worker + Postgres + Valkey + Chroma; API-key auth with per-key actor attribution; tailnet-only ACL — homelab `nas/services/claude-mem.md`). The fork's own contribution is the *operationalized team pilot*: deployment + runbooks, the connection-config UI with test-before-activate, and the local server-beta harness. An adversarial agent reviewed the position "adopt as the harness agents' memory layer at the Phase 0→1 boundary." **Verdict: include-at-gate survives, but only as modified below; immediate Phase-0 inclusion rejected** (trust surface + metered cost up front for a payoff that is not built yet, and a dependency inversion — using an unproven pilot to de-risk the fork); **full exclusion rejected** (its best arguments prove sequencing, not never, and it would discard the estate's only semantic-memory asset right before F17's own trigger may demand one).
+
+**Source-verified decisive facts:**
+- **Server mode captures but does not inject.** `src/cli/handlers/session-init.ts:92`: semantic injection is skipped in server mode; the SessionStart context handler reads only the *local* worker. Adopting the NAS topology today = capture without recall — all cost, zero §8 benefit.
+- The SessionStart hook matcher is `startup|clear|compact` — if Paperclip *resumes* sessions between heartbeats, injection never fires even once parity lands (verifiable only at Stage 5).
+- **Single-writer safety confirmed** (the position's strongest surviving plank): repo-write features default off (`SettingsDefaultsManager.ts:141`), injection is hook-stdout, vault and CLAUDE.md untouched — hard rules #1–#3 and D9 are unthreatened.
+- **Visibility:** new observations default `visibility='team'` (`schema.ts:408-409`); the one-time `private` backfill covers pre-visibility *history* only. The homelab service doc claimed the opposite — corrected 2026-07-24.
+- **Cost is metered and outside D5:** the generation worker requires a billed API key (not subscription auth); the fork's own anchors ($219/mo at 645 obs/day; one runaway session emitted 3,955 observations) put seven always-on agents at order **$300–600/month**, uncapped by Paperclip budgets and invisible to the rule-#6 cost log unless surfaced.
+
+**The one memory-layer decision (amends F17).** At **H-Task 9, on F13 evidence**, a single Board decision compares **Paperclip's native context packet vs Beads `bd prime` vs claude-mem injection** for the §8 re-context problem. Until then both tools are watch-list; neither is installed.
+
+**Gates before claude-mem can even enter that bake-off:**
+1. **Injection parity:** server-mode context injection built (the `/v1` context path wired into the SessionStart/session-init handlers) and proven to fire under Paperclip's actual invocation mode (resume vs startup checked).
+2. **Real capture verification** — not `/healthz`, which is a hardcoded string: the fork's pilot once probed 200 for 11 days while capturing nothing, and an unattended fleet makes silent fallback invisible.
+3. **Tenancy isolation:** a dedicated Postgres team row for agents (never the humans' team), an explicit visibility policy for agent rows (default-private inversion recommended), per-role API keys (actor = role) with per-role data dirs.
+4. **Trust:** plugin installation treated as a Board-signed Tier-0 grant — its hooks execute in every session *outside* D4's allowlists — with the plugin version pinned (F11 pattern) and repo-write flags config-asserted off.
+5. **Cost capped and tagged, not monitored:** enable the upstream token-cap/quota knobs (default off) and surface key→role spend into the harness cost log (hard rule #6).
+6. **Poisoning guard:** no unattended injection until a retraction/expiry story exists and injected context is logged per session — otherwise a wrong conclusion becomes durable team state re-injected forever, and Paperclip's audit trail cannot reconstruct what an agent actually saw.
+
+**Meanwhile, how aiteam takes advantage of the fork:** aiteam is the fork's customer roadmap. Gates 1–2 (injection parity, capture verification) become its headline milestones — its own queue #30's first real client would be this harness — and the fork's connection-test work exists precisely to de-risk this integration.
+
+### F19 — chat-gateway extracted to its own repo (supersedes F14's placement)
+
+**2026-07-24.** Google Chat is now required as a first-class channel by multiple independent agentic applications (this harness, aitrader, job-hunter, …), which breaks F14's harness-only placement premise. Created **`mmackelprang/chat-gateway`** (MIT, own CLAUDE.md + hard rules): a thin transport gateway owning **identities** (named webhooks now; the tier-2 Chat app via Pub/Sub later), **delivery** (synchronous envelope sends, plus accept-fast `POST /v1/notify` with severity routing/rendering, dedupe windows, a retrying dispatcher, and a per-source titles-only delivery log), **dead-man heartbeat checks** (tz-aware `weekdays` schedules — weekend due-dates roll to Monday), and **inbound reply routing** (Pub/Sub pull → per-app inboxes) — and never any app's message schema. Its hard rule #6, from the aitrader contract: **no inbound control path** — no gateway mechanism may turn a Chat message into a call against a consumer system; enforced (`allow_inbound: false` → 403), not just omitted.
+
+What changes for aiteam — nothing structural: hard rules #4/#5 stand. `notify.py` keeps owning the `review_item` renderers; at Stage 6 it gains a **gateway transport** (POST the rendered payload to `/v1/messages`) as the default send path, with direct webhooks as the fallback. F15's `bin/new-project` provisions a project's comms via the gateway registry instead of raw env plumbing. Free synergy: the harness's own SLA cron (H-Task 5) should register a gateway **heartbeat** so the escalation loop itself has a dead-man. Deployment: `/srv/chat-gateway` joins the appserver stack under homelab conventions. Built off-site 2026-07-24 — 31 offline tests including the aitrader acceptance criteria; Google-facing seams LIVE-UNVERIFIED pending the GCP setup (`chat-gateway/docs/google-cloud-setup.md`, `iac/`).
 
 ---
 
@@ -229,7 +262,7 @@ Stages are ordered so portfolio Phase 0 completes before the harness installs (i
 
 ---
 
-## 5. Decisions — all resolved 2026-07-23
+## 5. Decisions — resolved (D1–D9: 2026-07-23 · D10: 2026-07-24)
 
 Board answers, recorded here as the standing record; the affected stages reference them.
 
@@ -244,6 +277,7 @@ Board answers, recorded here as the standing record; the affected stages referen
 | D7 | Remote reachability while away | Tailnet exists but access rides the (currently off) dev computer — SSH prep waits until home; repo/plan/browser work proceeds now (§1.0). |
 | D8 | Changelog cap + confidence signals | Keep as spec'd (140-char cap, default signal table); adjust only on pilot evidence at Stage 3. |
 | D9 | Review-queue visibility on the note | **Sync-job route (F16):** `computed.open_reviews` written by the portfolio sync's Paperclip source; `raise_for_review` never touches the vault. Overrides proposal §7's direct-append line. |
+| D10 | Google Chat plumbing placement (F19) | **Own repo — `mmackelprang/chat-gateway`** (2026-07-24): multiple consumers (harness, aitrader, job-hunter) broke F14's harness-only premise. aiteam consumes it strictly as an HTTP service; the F14 tier/identity model is unchanged. |
 
 ---
 

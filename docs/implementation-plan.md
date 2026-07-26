@@ -140,6 +140,8 @@ Both documents already went through an adversarial review round and carry non-ne
 
 **Placement — no separate repo or folder at any tier.** Tier 1 is pure configuration inside `harness/` (routing YAML + env vars — no new code surface). The tier-2 two-way app is a small always-on service that consumes the same `review_item` schema and renderers, so it belongs beside them: **`harness/chat_app/`**, deployed as one more container in the `/srv/aiteam` appserver stack. Only Google-side *configuration* (one GCP project, Chat API config, Pub/Sub topic + subscription) lives outside the repo, documented in `harness/docs/` when Phase 2 starts. If the subtrees ever split into two repos, `chat_app/` travels with the harness.
 
+**Superseded 2026-07-24 (F19):** the multi-app requirement (aitrader, job-hunter, …) broke this placement's harness-only premise — the Chat plumbing now lives in its own repo, `mmackelprang/chat-gateway`. The tier model and identity design above stand unchanged.
+
 ### F15 — Adding a project/PM must be configuration, not development
 
 **Requirement (2026-07-23):** onboarding `new-project` should be one registration that (a) registers it with the portfolio, (b) stands up its harness team, and (c) enables comms with that project's manager/PM. The one-file-per-project convention both systems already use (vault note; `notification_routing/<project>.yaml`; `trust_tiers/<project>--<role>.yaml`; Paperclip team instantiated from the template) is exactly what makes this scriptable. Build a root-level **`bin/new-project <name> [--repo owner/name]`** wrapper that invokes each subtree's own CLI in order — subprocess calls, never imports, so the subtrees stay separable (sanctioned root-level glue; if the repos ever split, it decomposes into two commands). Runs from the dev computer or the appserver — it needs a repo checkout and the Paperclip API. What it does:
@@ -193,6 +195,12 @@ Asked 2026-07-23 (via a Better Stack guide; that page blocks automated readers, 
 6. **Poisoning guard:** no unattended injection until a retraction/expiry story exists and injected context is logged per session — otherwise a wrong conclusion becomes durable team state re-injected forever, and Paperclip's audit trail cannot reconstruct what an agent actually saw.
 
 **Meanwhile, how aiteam takes advantage of the fork:** aiteam is the fork's customer roadmap. Gates 1–2 (injection parity, capture verification) become its headline milestones — its own queue #30's first real client would be this harness — and the fork's connection-test work exists precisely to de-risk this integration.
+
+### F19 — chat-gateway extracted to its own repo (supersedes F14's placement)
+
+**2026-07-24.** Google Chat is now required as a first-class channel by multiple independent agentic applications (this harness, aitrader, job-hunter, …), which breaks F14's harness-only placement premise. Created **`mmackelprang/chat-gateway`** (MIT, own CLAUDE.md + hard rules): a thin transport gateway owning **identities** (named webhooks now; the tier-2 Chat app via Pub/Sub later), **delivery** (synchronous envelope sends, plus accept-fast `POST /v1/notify` with severity routing/rendering, dedupe windows, a retrying dispatcher, and a per-source titles-only delivery log), **dead-man heartbeat checks** (tz-aware `weekdays` schedules — weekend due-dates roll to Monday), and **inbound reply routing** (Pub/Sub pull → per-app inboxes) — and never any app's message schema. Its hard rule #6, from the aitrader contract: **no inbound control path** — no gateway mechanism may turn a Chat message into a call against a consumer system; enforced (`allow_inbound: false` → 403), not just omitted.
+
+What changes for aiteam — nothing structural: hard rules #4/#5 stand. `notify.py` keeps owning the `review_item` renderers; at Stage 6 it gains a **gateway transport** (POST the rendered payload to `/v1/messages`) as the default send path, with direct webhooks as the fallback. F15's `bin/new-project` provisions a project's comms via the gateway registry instead of raw env plumbing. Free synergy: the harness's own SLA cron (H-Task 5) should register a gateway **heartbeat** so the escalation loop itself has a dead-man. Deployment: `/srv/chat-gateway` joins the appserver stack under homelab conventions. Built off-site 2026-07-24 — 31 offline tests including the aitrader acceptance criteria; Google-facing seams LIVE-UNVERIFIED pending the GCP setup (`chat-gateway/docs/google-cloud-setup.md`, `iac/`).
 
 ---
 
@@ -254,7 +262,7 @@ Stages are ordered so portfolio Phase 0 completes before the harness installs (i
 
 ---
 
-## 5. Decisions — all resolved 2026-07-23
+## 5. Decisions — resolved (D1–D9: 2026-07-23 · D10: 2026-07-24)
 
 Board answers, recorded here as the standing record; the affected stages reference them.
 
@@ -269,6 +277,7 @@ Board answers, recorded here as the standing record; the affected stages referen
 | D7 | Remote reachability while away | Tailnet exists but access rides the (currently off) dev computer — SSH prep waits until home; repo/plan/browser work proceeds now (§1.0). |
 | D8 | Changelog cap + confidence signals | Keep as spec'd (140-char cap, default signal table); adjust only on pilot evidence at Stage 3. |
 | D9 | Review-queue visibility on the note | **Sync-job route (F16):** `computed.open_reviews` written by the portfolio sync's Paperclip source; `raise_for_review` never touches the vault. Overrides proposal §7's direct-append line. |
+| D10 | Google Chat plumbing placement (F19) | **Own repo — `mmackelprang/chat-gateway`** (2026-07-24): multiple consumers (harness, aitrader, job-hunter) broke F14's harness-only premise. aiteam consumes it strictly as an HTTP service; the F14 tier/identity model is unchanged. |
 
 ---
 

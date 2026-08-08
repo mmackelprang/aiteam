@@ -202,6 +202,10 @@ Asked 2026-07-23 (via a Better Stack guide; that page blocks automated readers, 
 
 What changes for aiteam — nothing structural: hard rules #4/#5 stand. `notify.py` keeps owning the `review_item` renderers; at Stage 6 it gains a **gateway transport** (POST the rendered payload to `/v1/messages`) as the default send path, with direct webhooks as the fallback. F15's `bin/new-project` provisions a project's comms via the gateway registry instead of raw env plumbing. Free synergy: the harness's own SLA cron (H-Task 5) should register a gateway **heartbeat** so the escalation loop itself has a dead-man. Deployment: `/srv/chat-gateway` joins the appserver stack under homelab conventions. Built off-site 2026-07-24 — 31 offline tests including the aitrader acceptance criteria; Google-facing seams LIVE-UNVERIFIED pending the GCP setup (`chat-gateway/docs/google-cloud-setup.md`, `iac/`).
 
+### F20 — Obsidian-Dashboard-Gallery patterns for the portfolio dashboard (research 2026-08-08) → D11
+
+Deep-read of `InlitX/Obsidian-Dashboard-Gallery` (four DataviewJS home-dashboards + paired CSS snippets, MIT) — full write-up in **`portfolio/docs/research-obsidian-dashboard-gallery.md`**. Nothing adopts wholesale (it's PKM-homepage tooling, computes everything in the view layer, and its quick-capture widget would be a fourth vault writer), but four patterns transfer cleanly: (1) **packaging** — dashboard note + CSS snippet kept as repo templates and deployed into the vault by bootstrap, versioned via `vault.git` (adoptable at P-Task 5, Bases era); (2) client-side **pill filtering** by `status`/`stage`/`priority`/`activity_state` with view state in localStorage (Phase 2); (3) **stat tiles** + render-only-when-non-empty (the "Unclaimed repos" queue should vanish when empty); (4) a rotating **stale-project spotlight** card as a passive retirement-review nudge (portfolio proposal round-1 finding #9). Two cautions recorded for any future DataviewJS dashboard: activity displays must read `computed.last_commit` — note `mtime` is meaningless in this vault since sync rewrites nightly — and the sync-written marker region must stay outside any code fence (JS injection otherwise). Adopt/review/defer is an open user decision → **D11**.
+
 ---
 
 ## 4. Staged plan
@@ -228,7 +232,7 @@ Stages are ordered so portfolio Phase 0 completes before the harness installs (i
 ### Stage 2 — dev computer: pilot bootstrap *(plan an afternoon for the review pass)*
 6. **P-Task 3** (ingest: signals, confidence, `_draft: true` notes).
 7. **P-Task 4** (human review pass — judgment fields are yours alone; drafts sorted low-confidence-first per F8).
-8. **P-Task 5** (write notes to vault; Bases dashboard: by-status view, freshness/confidence view, drafts view).
+8. **P-Task 5** (write notes to vault; Bases dashboard: by-status view, freshness/confidence view, drafts view). Review point for **D11** (F20): decide here whether the dashboard note (+ optional CSS snippet) is kept as a repo template deployed by bootstrap rather than hand-built in-app.
 
 ### Stage 3 — dev computer: sync + updater, tested locally
 9. **P-Task 6** (`sync_computed_fields.py`) with F6's byte-identity splice + test and F7's no-op guard. Prove against a throwaway note, then run manually against the pilot notes for a few days.
@@ -262,7 +266,7 @@ Stages are ordered so portfolio Phase 0 completes before the harness installs (i
 
 ---
 
-## 5. Decisions — resolved (D1–D9: 2026-07-23 · D10: 2026-07-24)
+## 5. Decisions (D1–D9 resolved 2026-07-23 · D10 resolved 2026-07-24 · D11 open)
 
 Board answers, recorded here as the standing record; the affected stages reference them.
 
@@ -278,6 +282,7 @@ Board answers, recorded here as the standing record; the affected stages referen
 | D8 | Changelog cap + confidence signals | Keep as spec'd (140-char cap, default signal table); adjust only on pilot evidence at Stage 3. |
 | D9 | Review-queue visibility on the note | **Sync-job route (F16):** `computed.open_reviews` written by the portfolio sync's Paperclip source; `raise_for_review` never touches the vault. Overrides proposal §7's direct-append line. |
 | D10 | Google Chat plumbing placement (F19) | **Own repo — `mmackelprang/chat-gateway`** (2026-07-24): multiple consumers (harness, aitrader, job-hunter) broke F14's harness-only premise. aiteam consumes it strictly as an HTTP service; the F14 tier/identity model is unchanged. |
+| D11 | Dashboard-gallery patterns (F20) — adopt / review / defer | **OPEN** (raised 2026-08-08). Decide which of F20's four patterns to take and when: the packaging pattern (dashboard + CSS as bootstrap-deployed templates) is the only pre-Phase-2 candidate — natural review point is Stage 2/P-Task 5 when the Bases dashboard is first built; pill filtering, stat tiles, and the stale-project spotlight are Phase 2 Dataview-spec material. Research: `portfolio/docs/research-obsidian-dashboard-gallery.md`. Default if unreviewed: defer everything to the Phase 2 spec; no Phase 0 acceptance item depends on it. |
 
 ---
 

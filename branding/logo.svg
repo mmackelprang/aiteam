@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 692 256">
+  <g transform="translate(0,40) scale(0.6875)">
+    <rect width="256" height="256" rx="56" fill="#23272E"/>
+
+<rect x="102" y="42" width="52" height="52" rx="11" fill="#4C8DFF"/>
+<g stroke="#8FA6C8" stroke-width="8" stroke-linecap="round" fill="none">
+  <path d="M128 94 V120 M64 120 H192 M64 120 V144 M128 120 V144 M192 120 V144"/>
+</g>
+<circle cx="64" cy="168" r="23" fill="none" stroke="#E7EDF6" stroke-width="9"/>
+<circle cx="128" cy="168" r="23" fill="none" stroke="#E7EDF6" stroke-width="9"/>
+<circle cx="192" cy="168" r="23" fill="none" stroke="#E7EDF6" stroke-width="9"/>
+
+  </g>
+  <text x="224" y="140" font-family="Montserrat, 'Segoe UI', 'DejaVu Sans', system-ui, sans-serif" font-size="84" font-weight="700" fill="#1B1F26">Foreman</text>
+  <text x="224" y="192" font-family="Montserrat, 'Segoe UI', 'DejaVu Sans', system-ui, sans-serif" font-size="32" font-weight="500" fill="#5A6472">AI teams, human foreman.</text>
+</svg>
